@@ -6,555 +6,622 @@
   <title>Office 365 Simulator</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-    html, body { height: 100%; background: #f3f3f3; font-family: 'Segoe UI', system-ui, sans-serif; }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+    html,body{height:100%;background:#f3f3f3;font-family:'Segoe UI',system-ui,sans-serif}
 
-    .app-shell { display: flex; flex-direction: column; height: 100vh; }
+    .toggle-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 14px;background:#1a1a1a;cursor:pointer;user-select:none;border-bottom:1px solid #2a2a2a;transition:background .15s}
+    .toggle-bar:hover{background:#222}
+    .toggle-bar span{font-size:12px;color:#555;letter-spacing:.3px}
 
-    /* ── APP SWITCHER ── */
-    .app-switcher {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 16px; background: #1e1e1e; border-bottom: 1px solid #333;
-    }
-    .app-switcher span { color: #aaa; font-size: 12px; margin-right: 4px; }
-    .sw-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 14px; border-radius: 20px; border: 1px solid #555;
-      background: transparent; color: #ccc; cursor: pointer; font-size: 13px;
-      font-family: inherit; transition: all .15s;
-    }
-    .sw-btn:hover { background: #333; color: white; }
-    .sw-btn.on.word { background: #2B579A; color: white; border-color: #2B579A; }
-    .sw-btn.on.excel { background: #217346; color: white; border-color: #217346; }
+    .sim-wrap{overflow:hidden;max-height:0;transition:max-height .35s ease}
+    .sim-wrap.open{max-height:100vh}
+    .sim-inner{display:flex;height:calc(100vh - 33px)}
 
-    /* ── SHELL ── */
-    .shell { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-    .shell.on { display: flex; }
+    /* SIDEBAR */
+    .side{width:185px;min-width:185px;background:#f8f8f8;border-right:1px solid #ddd;display:flex;flex-direction:column;overflow-y:auto}
+    .s-hd{padding:7px 10px 3px;font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid #eee;margin-top:3px}
+    .s-hd:first-child{border-top:none;margin-top:0}
+    .ck-row{display:flex;align-items:center;gap:7px;padding:4px 10px;cursor:pointer;border-radius:3px;margin:1px 4px}
+    .ck-row:hover{background:#efefef}
+    .ck-row input{width:13px;height:13px;cursor:pointer;accent-color:#185FA5}
+    .ck-row label{cursor:pointer;font-size:12px;color:#333;flex:1;line-height:1.3}
+    .ck-row.act label{color:#185FA5;font-weight:600}
+    .speed-row{display:flex;align-items:center;gap:6px;padding:7px 10px 5px}
+    .speed-row label{font-size:11px;color:#888;white-space:nowrap}
+    .speed-row input{flex:1}
+    .s-sep{height:1px;background:#eee;margin:3px 8px}
+    .s-foot{padding:8px;margin-top:auto;border-top:1px solid #eee}
+    .stop-btn{width:100%;padding:5px;border:1px solid #f09595;border-radius:5px;background:transparent;color:#a32d2d;cursor:pointer;font-size:12px;font-family:inherit}
+    .stop-btn:hover{background:#fcebeb}
 
-    /* ── TITLE BAR ── */
-    .titlebar { height: 32px; display: flex; align-items: center; padding: 0 8px; color: white; font-size: 12px; user-select: none; flex-shrink: 0; }
-    .titlebar.word-bar { background: #2B579A; }
-    .titlebar.excel-bar { background: #217346; }
-    .tb-logo { display: flex; align-items: center; gap: 5px; padding: 0 10px 0 4px; font-weight: 700; }
-    .tb-logo .wico { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 2px; font-size: 13px; font-weight: 900; }
-    .tb-logo .wico.w { color: #2B579A; }
-    .tb-logo .wico.x { color: #217346; }
-    .tb-docname { flex: 1; text-align: center; font-size: 12px; opacity: .9; }
-    .tb-user { display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; opacity: .9; }
-    .tb-avatar { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,.3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
-    .wc-btn { width: 46px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; opacity: .8; font-size: 14px; }
-    .wc-btn:hover { background: rgba(255,255,255,.15); opacity: 1; }
-    .wc-btn.close:hover { background: #e81123; opacity: 1; }
+    /* MAIN */
+    .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+    .app-tabs{display:flex;background:#2B579A}
+    .app-tab{padding:6px 14px;font-size:12px;cursor:pointer;color:rgba(255,255,255,.75);border-right:1px solid rgba(255,255,255,.15)}
+    .app-tab:hover{color:white;background:rgba(255,255,255,.1)}
+    .app-tab.on{background:#f5f5f5;color:#333;font-weight:500}
+    .view{display:none;flex-direction:column;flex:1;overflow:hidden}
+    .view.on{display:flex}
 
-    /* ── QUICK ACCESS ── */
-    .qat { display: flex; align-items: center; gap: 2px; }
-    .qat-btn { width: 22px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 2px; cursor: pointer; color: rgba(255,255,255,.85); font-size: 13px; }
-    .qat-btn:hover { background: rgba(255,255,255,.2); }
+    /* TITLE BAR */
+    .tbar2{height:28px;display:flex;align-items:center;padding:0 8px;color:white;font-size:11px;user-select:none;flex-shrink:0}
+    .tbar2.w{background:#2B579A}.tbar2.x{background:#217346}
+    .tb-logo{display:flex;align-items:center;gap:4px;padding:0 8px 0 2px}
+    .wico{width:18px;height:18px;display:flex;align-items:center;justify-content:center;background:white;border-radius:2px;font-size:12px;font-weight:900}
+    .wico.w{color:#2B579A}.wico.x{color:#217346}
+    .qat{display:flex;gap:2px}
+    .qbt{width:20px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:2px;cursor:pointer;color:rgba(255,255,255,.8);font-size:12px}
+    .qbt:hover{background:rgba(255,255,255,.2)}
+    .tdoc{flex:1;text-align:center;font-size:11px;opacity:.85}
+    .tuser{display:flex;align-items:center;gap:5px;padding:0 6px;font-size:11px;opacity:.85}
+    .tavt{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600}
+    .wcb{width:36px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,.8);font-size:12px}
+    .wcb:hover{background:rgba(255,255,255,.15)}
+    .wcb.cl:hover{background:#e81123}
 
-    /* ── RIBBON TABS ── */
-    .ribbon-tabs { height: 30px; display: flex; align-items: flex-end; padding: 0 4px; flex-shrink: 0; border-bottom: 1px solid #d0d0d0; }
-    .ribbon-tabs.word-rt { background: #2B579A; }
-    .ribbon-tabs.excel-rt { background: #217346; }
-    .rtab { padding: 0 12px; height: 28px; display: flex; align-items: center; font-size: 12px; cursor: pointer; border-radius: 3px 3px 0 0; color: rgba(255,255,255,.85); white-space: nowrap; }
-    .rtab:hover { background: rgba(255,255,255,.15); color: white; }
-    .rtab.on { background: #f5f5f5; color: #333; }
+    /* RIBBON TABS */
+    .rtabs{height:26px;display:flex;align-items:flex-end;padding:0 4px;flex-shrink:0;border-bottom:1px solid #d0d0d0}
+    .rtabs.w{background:#2B579A}.rtabs.x{background:#217346}
+    .rtab{padding:0 10px;height:24px;display:flex;align-items:center;font-size:11px;cursor:pointer;border-radius:3px 3px 0 0;color:rgba(255,255,255,.8)}
+    .rtab:hover{background:rgba(255,255,255,.15);color:white}
+    .rtab.on{background:#f5f5f5;color:#333}
 
-    /* ── RIBBON ── */
-    .ribbon { background: #f5f5f5; border-bottom: 1px solid #d0d0d0; padding: 4px 8px 6px; display: flex; align-items: flex-end; gap: 0; min-height: 78px; flex-shrink: 0; overflow-x: auto; }
-    .rgroup { display: flex; flex-direction: column; align-items: center; padding: 0 8px; border-right: 1px solid #d8d8d8; gap: 4px; }
-    .rgroup:last-child { border-right: none; }
-    .rg-top { display: flex; align-items: flex-end; gap: 2px; flex: 1; }
-    .rg-label { font-size: 10px; color: #777; text-align: center; }
-    .rb { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 3px 5px; border-radius: 3px; cursor: pointer; min-width: 30px; height: 58px; border: 1px solid transparent; color: #333; font-size: 11px; }
-    .rb:hover { background: #e5e5e5; border-color: #ccc; }
-    .rb i { font-size: 22px; color: #444; }
-    .rb span { font-size: 10px; color: #555; text-align: center; line-height: 1.2; }
-    .rb.sm { flex-direction: row; height: 18px; padding: 2px 5px; gap: 4px; }
-    .rb.sm i { font-size: 14px; }
-    .font-row { display: flex; gap: 3px; align-items: center; margin-bottom: 2px; }
-    .font-sel { padding: 2px 4px; border: 1px solid #ccc; border-radius: 2px; font-size: 11px; background: white; color: #333; height: 22px; }
-    .size-sel { padding: 2px 4px; border: 1px solid #ccc; border-radius: 2px; font-size: 11px; background: white; color: #333; width: 42px; height: 22px; }
-    .fmt-row { display: flex; gap: 1px; align-items: center; flex-wrap: wrap; }
-    .fmt-btn { padding: 2px 5px; border: 1px solid transparent; border-radius: 2px; cursor: pointer; font-size: 13px; background: transparent; color: #333; min-width: 22px; height: 20px; display: flex; align-items: center; justify-content: center; }
-    .fmt-btn:hover { background: #e5e5e5; border-color: #ccc; }
-    .fmt-btn.on { background: #ddeeff; border-color: #aac4e4; }
-    .rb-sep { width: 1px; height: 36px; background: #d8d8d8; margin: 0 2px; align-self: center; }
-    .clr-btn { display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 1px solid transparent; border-radius: 2px; padding: 1px 3px; }
-    .clr-btn:hover { background: #e5e5e5; border-color: #ccc; }
-    .color-bar { height: 3px; border-radius: 1px; margin-top: 1px; }
+    /* RIBBON */
+    .ribbon{background:#f5f5f5;border-bottom:1px solid #d0d0d0;padding:3px 6px 5px;display:flex;align-items:flex-end;min-height:68px;flex-shrink:0;overflow-x:auto}
+    .rg{display:flex;flex-direction:column;align-items:center;padding:0 6px;border-right:1px solid #d8d8d8;gap:3px}
+    .rg:last-child{border-right:none}
+    .rgt{display:flex;align-items:flex-end;gap:2px;flex:1}
+    .rgl{font-size:9px;color:#888;text-align:center}
+    .rb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px 4px;border-radius:3px;cursor:pointer;min-width:26px;height:50px;border:1px solid transparent;font-size:10px;color:#333}
+    .rb:hover{background:#e5e5e5;border-color:#ccc}
+    .rb i{font-size:18px;color:#444}
+    .rb span{font-size:9px;color:#555;text-align:center;line-height:1.2}
+    .rb.sm{flex-direction:row;height:16px;padding:1px 4px;gap:3px}
+    .rb.sm i{font-size:12px}
+    .fsrow{display:flex;gap:2px;align-items:center;margin-bottom:2px}
+    .fsel{padding:1px 3px;border:1px solid #ccc;border-radius:2px;font-size:10px;background:white;color:#333;height:20px}
+    .fmrow{display:flex;gap:1px;align-items:center}
+    .fb{padding:1px 4px;border:1px solid transparent;border-radius:2px;cursor:pointer;font-size:12px;background:transparent;color:#333;min-width:20px;height:18px;display:flex;align-items:center;justify-content:center}
+    .fb:hover{background:#e5e5e5;border-color:#ccc}
+    .fb.on{background:#ddeeff;border-color:#aac4e4}
+    .rsep{width:1px;height:32px;background:#d8d8d8;margin:0 2px;align-self:center}
+    .clb{display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid transparent;border-radius:2px;padding:1px 2px}
+    .clb:hover{background:#e5e5e5;border-color:#ccc}
+    .cbar{height:3px;border-radius:1px;margin-top:1px}
 
-    /* ── WORD ── */
-    .word-body { display: flex; flex: 1; overflow: hidden; background: #ababab; }
-    .vruler { width: 18px; background: #f0f0f0; border-right: 1px solid #d0d0d0; display: flex; flex-direction: column; padding-top: 10px; flex-shrink: 0; }
-    .vr-num { font-size: 9px; color: #888; text-align: center; height: 96px; display: flex; align-items: flex-start; justify-content: center; padding-top: 2px; }
-    .word-scroll { flex: 1; padding: 14px 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; overflow-y: auto; }
-    .hruler-wrap { width: 660px; max-width: 100%; height: 18px; background: #f0f0f0; border: 1px solid #d0d0d0; display: flex; align-items: center; padding: 0 82px; flex-shrink: 0; position: relative; }
-    .hruler { flex: 1; height: 100%; position: relative; }
-    .page { width: 660px; max-width: 100%; background: white; box-shadow: 0 1px 6px rgba(0,0,0,.3); padding: 96px 82px; flex-shrink: 0; min-height: 860px; outline: none; }
-    .page h1 { font-size: 26px; font-weight: 300; color: #2B2B2B; margin-bottom: 16px; font-family: 'Calibri Light', 'Segoe UI', sans-serif; border-bottom: 2px solid #2B579A; padding-bottom: 8px; }
-    .page h2 { font-size: 15px; font-weight: 600; color: #1F3864; margin: 18px 0 6px; }
-    .page p { font-size: 12px; color: #333; line-height: 1.9; margin-bottom: 10px; font-family: 'Calibri', 'Segoe UI', sans-serif; }
-    .page .indent { text-indent: 28px; }
-    .word-stbar { height: 22px; background: #2B579A; display: flex; align-items: center; padding: 0 10px; gap: 16px; color: rgba(255,255,255,.9); font-size: 11px; flex-shrink: 0; }
-    .right-cluster { margin-left: auto; display: flex; gap: 10px; align-items: center; }
-    .zoom-bar { display: flex; align-items: center; gap: 5px; }
-    .zoom-bar input[type=range] { width: 70px; accent-color: white; }
-    .view-btns { display: flex; gap: 2px; }
-    .vbtn { width: 20px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 2px; cursor: pointer; color: rgba(255,255,255,.7); font-size: 12px; }
-    .vbtn:hover, .vbtn.on { color: white; background: rgba(255,255,255,.2); }
+    /* WORD BODY */
+    .wbody{display:flex;flex:1;overflow:hidden;background:#ababab}
+    .vrul{width:16px;background:#f0f0f0;border-right:1px solid #d0d0d0;display:flex;flex-direction:column;padding-top:8px;flex-shrink:0}
+    .vrn{font-size:9px;color:#888;text-align:center;height:96px;display:flex;align-items:flex-start;justify-content:center;padding-top:2px}
+    .wscroll{flex:1;padding:10px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;overflow-y:auto}
+    .hrulw{width:580px;max-width:100%;height:16px;background:#f0f0f0;border:1px solid #d0d0d0;display:flex;align-items:center;padding:0 70px;flex-shrink:0;position:relative}
+    .hrul{flex:1;height:100%;position:relative}
+    .page{width:580px;max-width:100%;background:white;box-shadow:0 1px 4px rgba(0,0,0,.3);padding:72px 70px;flex-shrink:0;min-height:760px;outline:none;font-size:12px;line-height:1.8;color:#333}
+    .page h1{font-size:22px;font-weight:300;color:#2B2B2B;margin-bottom:12px;border-bottom:2px solid #2B579A;padding-bottom:6px;font-family:'Calibri Light','Segoe UI',sans-serif}
+    .page h2{font-size:14px;font-weight:600;color:#1F3864;margin:14px 0 5px}
+    .page p{margin-bottom:8px;font-family:'Calibri','Segoe UI',sans-serif}
+    .page .ind{text-indent:24px}
+    .page ul{padding-left:18px;margin-bottom:8px}
+    .page li{margin-bottom:2px}
+    .page table{border-collapse:collapse;margin:6px 0;width:100%}
+    .page table td,.page table th{border:1px solid #bbb;padding:2px 6px;font-size:11px}
+    .page table th{background:#f0f0f0;font-weight:500}
+    .cur{display:inline-block;width:2px;height:12px;background:#185FA5;animation:bl .7s infinite;vertical-align:text-bottom}
+    @keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
+    .wstbar{height:20px;background:#2B579A;display:flex;align-items:center;padding:0 8px;gap:12px;color:rgba(255,255,255,.9);font-size:10px;flex-shrink:0}
 
-    /* ── EXCEL ── */
-    .excel-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    .namebox-bar { height: 26px; background: white; border-bottom: 1px solid #d0d0d0; display: flex; align-items: center; flex-shrink: 0; }
-    .namebox { width: 56px; height: 26px; border-right: 1px solid #d0d0d0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #333; cursor: pointer; }
-    .namebox:hover { background: #f5f5f5; }
-    .fx-label { padding: 0 8px; font-size: 14px; color: #555; font-style: italic; border-right: 1px solid #d0d0d0; height: 100%; display: flex; align-items: center; }
-    .fxbar-input { flex: 1; height: 100%; border: none; outline: none; padding: 0 8px; font-size: 12px; color: #333; font-family: 'Segoe UI', sans-serif; background: white; }
-    .xl-body { display: flex; flex: 1; overflow: hidden; }
-    .xl-scroll { flex: 1; overflow: auto; }
-    .xl-tbl { border-collapse: collapse; font-size: 12px; }
-    .xl-tbl th { background: #f5f5f5; border: 1px solid #d0d0d0; min-width: 72px; height: 20px; text-align: center; font-weight: 400; color: #555; font-size: 11px; position: sticky; top: 0; z-index: 3; user-select: none; cursor: pointer; }
-    .xl-tbl th:first-child { min-width: 36px; width: 36px; left: 0; z-index: 4; position: sticky; }
-    .xl-tbl th:hover { background: #cce5ff; }
-    .xl-tbl td { border: 1px solid #e0e0e0; min-width: 72px; height: 20px; padding: 0 4px; color: #333; cursor: cell; white-space: nowrap; }
-    .xl-tbl td:first-child { background: #f5f5f5; border-color: #d0d0d0; text-align: center; color: #555; font-size: 11px; min-width: 36px; width: 36px; position: sticky; left: 0; z-index: 2; user-select: none; }
-    .xl-tbl td.sel { background: #d9eaf7; outline: 2px solid #1073BA; outline-offset: -2px; }
-    .xl-tbl tr:first-child td { font-weight: 600; background: #e9f2e9; color: #1a5e35; }
-    .xl-tbl tr:first-child td:first-child { font-weight: 400; background: #f5f5f5; color: #555; }
-    .xl-tbl tr.total-row td { font-weight: 600; background: #f0f0f0; border-top: 2px solid #217346; }
-    .xl-tbl tr.total-row td:first-child { font-weight: 400; }
-    .sheettabs { height: 24px; background: #f5f5f5; border-top: 1px solid #d0d0d0; display: flex; align-items: flex-end; padding: 0 4px; flex-shrink: 0; }
-    .stab { padding: 0 14px; height: 20px; display: flex; align-items: center; font-size: 11px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 3px 3px 0 0; color: #555; }
-    .stab:hover { background: #eaeaea; }
-    .stab.on { background: white; border-color: #d0d0d0; color: #217346; font-weight: 600; }
-    .stab-add { width: 24px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; color: #777; margin-left: 4px; }
-    .xl-stbar { height: 22px; background: #217346; display: flex; align-items: center; padding: 0 10px; gap: 16px; color: rgba(255,255,255,.9); font-size: 11px; flex-shrink: 0; }
+    /* EXCEL */
+    .fbar{height:24px;background:white;border-bottom:1px solid #d0d0d0;display:flex;align-items:center;flex-shrink:0}
+    .fnb{width:48px;height:24px;border-right:1px solid #d0d0d0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#333;cursor:pointer}
+    .fnb:hover{background:#f5f5f5}
+    .ffx{padding:0 6px;font-size:13px;color:#777;font-style:italic;border-right:1px solid #d0d0d0;height:100%;display:flex;align-items:center}
+    .fxi{flex:1;height:100%;border:none;outline:none;padding:0 6px;font-size:11px;color:#333;background:white;font-family:'Segoe UI',sans-serif}
+    .xwrap{flex:1;overflow:auto}
+    .xt{border-collapse:collapse;font-size:11px}
+    .xt th{background:#f5f5f5;border:1px solid #d0d0d0;min-width:68px;height:18px;text-align:center;font-weight:400;color:#666;font-size:10px;position:sticky;top:0;z-index:3;cursor:pointer}
+    .xt th:first-child{min-width:30px;width:30px;left:0;z-index:4;position:sticky}
+    .xt th:hover{background:#cce5ff}
+    .xt td{border:1px solid #e0e0e0;min-width:68px;height:18px;padding:0 3px;color:#333;cursor:cell;white-space:nowrap}
+    .xt td:first-child{background:#f5f5f5;border-color:#d0d0d0;text-align:center;color:#666;font-size:10px;min-width:30px;width:30px;position:sticky;left:0;z-index:2}
+    .xt td.sel{background:#d9eaf7;outline:2px solid #1073BA;outline-offset:-2px}
+    .xt td.hl{background:#d4edda}.xt td.hl2{background:#fff3cd}
+    .xt tr:first-child td{font-weight:600;background:#e9f2e9;color:#1a5e35}
+    .xt tr:first-child td:first-child{font-weight:400;background:#f5f5f5;color:#666}
+    .stabs{height:22px;background:#f5f5f5;border-top:1px solid #d0d0d0;display:flex;align-items:flex-end;padding:0 4px;flex-shrink:0}
+    .stab{padding:0 12px;height:18px;display:flex;align-items:center;font-size:11px;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:3px 3px 0 0;color:#666}
+    .stab:hover{background:#eaeaea}
+    .stab.on{background:white;border-color:#d0d0d0;color:#217346;font-weight:600}
+    .xlstbar{height:20px;background:#217346;display:flex;align-items:center;padding:0 8px;gap:12px;color:rgba(255,255,255,.9);font-size:10px;flex-shrink:0}
 
-    /* scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #f0f0f0; }
-    ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #999; }
+    /* EXTRAS */
+    .ext-area{flex:1;overflow:auto;background:#f0f0f0;padding:10px;display:flex;gap:8px;flex-wrap:wrap;align-content:flex-start}
+    .ec{background:white;border:1px solid #ddd;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:5px;min-height:140px}
+    .ec h4{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px}
+    .term{flex:1;background:#1e1e1e;border-radius:3px;padding:6px;font-family:monospace;font-size:10px;color:#ccc;overflow:auto;min-height:110px}
+    .term .pr{color:#4ec9b0}
+    .fg{display:flex;flex-direction:column;gap:4px}
+    .fg label{font-size:10px;color:#888}
+    .fg input,.fg select{padding:3px 5px;border:1px solid #ddd;border-radius:3px;font-size:11px;background:white;color:#333}
+    .fg input.ty{border-color:#185FA5;background:#f0f6ff}
+    .cg{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+    .cd{grid-column:1/-1;background:#1e1e1e;color:white;padding:4px 8px;border-radius:3px;font-size:14px;font-weight:500;text-align:right;margin-bottom:2px}
+    .cbtn{padding:5px 3px;border:1px solid #ddd;border-radius:3px;background:#f5f5f5;cursor:pointer;font-size:11px;text-align:center;color:#333}
+    .cbtn.op{background:#e6f1fb;color:#185FA5}
+    .cbtn.act{background:#185FA5;color:white}
+    .chat-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:120px}
+    .msg{padding:4px 8px;border-radius:8px;font-size:11px;max-width:88%;line-height:1.4}
+    .msg.me{background:#185FA5;color:white;align-self:flex-end}
+    .msg.oth{background:#f0f0f0;color:#333;align-self:flex-start}
+    .dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#888;margin:0 1px;animation:dt .9s infinite}
+    .dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+    @keyframes dt{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:#f0f0f0}
+    ::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
   </style>
 </head>
 <body>
 
-<div class="app-shell">
-  <div class="app-switcher">
-    <span>Simulador:</span>
-    <button class="sw-btn on word" onclick="show('word')">
-      <i class="ti ti-file-text"></i> Word
-    </button>
-    <button class="sw-btn excel" onclick="show('excel')">
-      <i class="ti ti-table"></i> Excel
-    </button>
-  </div>
+<!-- BARRA TOGGLE -->
+<div class="toggle-bar" onclick="toggleSim()" id="togBar">
+  <span id="togTxt">▼ expandir simulador</span>
+</div>
 
-  <!-- ════════════════ WORD ════════════════ -->
-  <div class="shell on" id="appWord">
-    <div class="titlebar word-bar">
-      <div class="tb-logo"><div class="wico w">W</div></div>
-      <div class="qat">
-        <div class="qat-btn" title="Salvar"><i class="ti ti-device-floppy"></i></div>
-        <div class="qat-btn" title="Desfazer"><i class="ti ti-arrow-back-up"></i></div>
-        <div class="qat-btn" title="Refazer"><i class="ti ti-arrow-forward-up"></i></div>
-      </div>
-      <div class="tb-docname">Documento1 — Word</div>
-      <div class="tb-user">
-        <span>Compartilhar</span>
-        <div class="tb-avatar">RF</div>
-      </div>
-      <div class="wc-btn" title="Minimizar">&#8212;</div>
-      <div class="wc-btn" title="Maximizar">&#9633;</div>
-      <div class="wc-btn close" title="Fechar">&#10005;</div>
-    </div>
+<!-- SIMULADOR -->
+<div class="sim-wrap" id="simWrap">
+  <div class="sim-inner">
 
-    <div class="ribbon-tabs word-rt">
-      <div class="rtab on">Página Inicial</div>
-      <div class="rtab">Inserir</div>
-      <div class="rtab">Desenhar</div>
-      <div class="rtab">Design</div>
-      <div class="rtab">Layout</div>
-      <div class="rtab">Referências</div>
-      <div class="rtab">Revisão</div>
-      <div class="rtab">Exibir</div>
-    </div>
-
-    <div class="ribbon">
-      <!-- Área de Transferência -->
-      <div class="rgroup">
-        <div class="rg-top">
-          <div class="rb"><i class="ti ti-clipboard-text"></i><span>Colar</span></div>
-          <div style="display:flex;flex-direction:column;gap:2px">
-            <div class="rb sm"><i class="ti ti-cut"></i><span>Recortar</span></div>
-            <div class="rb sm"><i class="ti ti-copy"></i><span>Copiar</span></div>
-            <div class="rb sm"><i class="ti ti-paint"></i><span>Pincel</span></div>
-          </div>
-        </div>
-        <div class="rg-label">Área de Transferência</div>
+    <!-- SIDEBAR -->
+    <div class="side">
+      <div class="speed-row">
+        <label>Velocidade</label>
+        <input type="range" id="sp" min="1" max="5" value="3" step="1" oninput="document.getElementById('spv').textContent=this.value">
+        <span id="spv" style="font-size:10px;color:#888;min-width:10px">3</span>
       </div>
-      <!-- Fonte -->
-      <div class="rgroup">
-        <div class="rg-top" style="flex-direction:column;gap:3px">
-          <div class="font-row">
-            <select class="font-sel" style="width:130px">
-              <option>Calibri (Corpo)</option><option>Arial</option><option>Times New Roman</option><option>Verdana</option>
-            </select>
-            <select class="size-sel"><option>11</option><option>12</option><option>14</option><option>16</option><option>18</option></select>
-            <div class="fmt-btn"><i class="ti ti-letter-case-upper" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-letter-case-lower" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-eraser" style="font-size:14px"></i></div>
-          </div>
-          <div class="fmt-row">
-            <div class="fmt-btn on" style="font-weight:700;font-size:14px">N</div>
-            <div class="fmt-btn" style="font-style:italic;font-size:14px">I</div>
-            <div class="fmt-btn" style="text-decoration:underline;font-size:14px">S</div>
-            <div class="fmt-btn" style="text-decoration:line-through;font-size:13px">abc</div>
-            <div class="fmt-btn" style="font-size:11px">x<sub>2</sub></div>
-            <div class="fmt-btn" style="font-size:11px">x<sup>2</sup></div>
-            <div class="rb-sep"></div>
-            <div class="clr-btn"><div style="font-size:13px;font-weight:700;color:#e74c3c">A</div><div class="color-bar" style="width:16px;background:#e74c3c"></div></div>
-            <div class="clr-btn"><div style="font-size:13px">A</div><div class="color-bar" style="width:16px;background:#f1c40f"></div></div>
-          </div>
-        </div>
-        <div class="rg-label">Fonte</div>
-      </div>
-      <!-- Parágrafo -->
-      <div class="rgroup">
-        <div class="rg-top" style="flex-direction:column;gap:3px">
-          <div class="fmt-row">
-            <div class="fmt-btn"><i class="ti ti-list" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-list-numbers" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-list-tree" style="font-size:14px"></i></div>
-            <div class="rb-sep"></div>
-            <div class="fmt-btn"><i class="ti ti-indent-decrease" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-indent-increase" style="font-size:14px"></i></div>
-          </div>
-          <div class="fmt-row">
-            <div class="fmt-btn"><i class="ti ti-align-left" style="font-size:14px"></i></div>
-            <div class="fmt-btn on"><i class="ti ti-align-center" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-align-right" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-align-justified" style="font-size:14px"></i></div>
-            <div class="rb-sep"></div>
-            <div class="fmt-btn"><i class="ti ti-line-height" style="font-size:14px"></i></div>
-          </div>
-        </div>
-        <div class="rg-label">Parágrafo</div>
-      </div>
-      <!-- Estilos -->
-      <div class="rgroup">
-        <div class="rg-top" style="gap:3px">
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid transparent;border-radius:2px;padding:4px 8px" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background=''">
-            <div style="font-size:15px;color:#2B579A;font-weight:700">T</div><div style="font-size:9px;color:#777">Normal</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid #2B579A;border-radius:2px;padding:4px 8px;background:#ddeeff">
-            <div style="font-size:15px;font-weight:700;color:#1F3864">T</div><div style="font-size:9px;color:#2B579A">Título 1</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid transparent;border-radius:2px;padding:4px 8px" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background=''">
-            <div style="font-size:14px;font-weight:600;color:#1F3864">T</div><div style="font-size:9px;color:#777">Título 2</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid transparent;border-radius:2px;padding:4px 8px" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background=''">
-            <div style="font-size:13px;font-style:italic;color:#555">T</div><div style="font-size:9px;color:#777">Ênfase</div>
-          </div>
-        </div>
-        <div class="rg-label">Estilos</div>
-      </div>
-      <!-- Edição -->
-      <div class="rgroup">
-        <div class="rg-top" style="gap:3px">
-          <div class="rb"><i class="ti ti-search"></i><span>Localizar</span></div>
-          <div class="rb"><i class="ti ti-replace"></i><span>Substituir</span></div>
-          <div class="rb"><i class="ti ti-pointer"></i><span>Selecionar</span></div>
-        </div>
-        <div class="rg-label">Edição</div>
+      <div class="s-sep"></div>
+      <div class="s-hd" style="color:#2B579A">Word</div>
+      <div class="ck-row" id="r0"><input type="checkbox" id="c0"><label for="c0">Digitar lorem ipsum</label></div>
+      <div class="ck-row" id="r1"><input type="checkbox" id="c1"><label for="c1">Inserir títulos</label></div>
+      <div class="ck-row" id="r2"><input type="checkbox" id="c2"><label for="c2">Criar lista</label></div>
+      <div class="ck-row" id="r3"><input type="checkbox" id="c3"><label for="c3">Inserir tabela</label></div>
+      <div class="ck-row" id="r4"><input type="checkbox" id="c4"><label for="c4">Formatar (N/I/S)</label></div>
+      <div class="s-hd" style="color:#217346">Excel</div>
+      <div class="ck-row" id="r5"><input type="checkbox" id="c5"><label for="c5">Preencher dados</label></div>
+      <div class="ck-row" id="r6"><input type="checkbox" id="c6"><label for="c6">Inserir fórmulas</label></div>
+      <div class="ck-row" id="r7"><input type="checkbox" id="c7"><label for="c7">Navegar células</label></div>
+      <div class="ck-row" id="r8"><input type="checkbox" id="c8"><label for="c8">Destacar valores</label></div>
+      <div class="ck-row" id="r9"><input type="checkbox" id="c9"><label for="c9">Ordenar dados</label></div>
+      <div class="s-hd">Extras</div>
+      <div class="ck-row" id="r10"><input type="checkbox" id="c10"><label for="c10">Paint — desenhar</label></div>
+      <div class="ck-row" id="r11"><input type="checkbox" id="c11"><label for="c11">Terminal</label></div>
+      <div class="ck-row" id="r12"><input type="checkbox" id="c12"><label for="c12">Formulário web</label></div>
+      <div class="ck-row" id="r13"><input type="checkbox" id="c13"><label for="c13">Calculadora</label></div>
+      <div class="ck-row" id="r14"><input type="checkbox" id="c14"><label for="c14">Chat ao vivo</label></div>
+      <div class="s-foot">
+        <button class="stop-btn" onclick="stopBot()">&#9632; Parar tudo</button>
       </div>
     </div>
 
-    <div style="display:flex;flex:1;overflow:hidden">
-      <div class="vruler">
-        <div class="vr-num">1</div><div class="vr-num">2</div><div class="vr-num">3</div>
-        <div class="vr-num">4</div><div class="vr-num">5</div><div class="vr-num">6</div>
+    <!-- MAIN -->
+    <div class="main">
+      <div class="app-tabs" id="appTabs">
+        <div class="app-tab on" id="tw" onclick="goTab('w')">&#128196; Word</div>
+        <div class="app-tab" id="te" onclick="goTab('e')">&#9783; Excel</div>
+        <div class="app-tab" id="tx" onclick="goTab('x')">&#9881; Extras</div>
       </div>
-      <div class="word-body">
-        <div class="word-scroll">
-          <div class="hruler-wrap" id="hruler"></div>
-          <div class="page" contenteditable="true">
-            <h1>Relatório Anual de Desempenho</h1>
-            <h2>1. Resumo Executivo</h2>
-            <p class="indent">O presente relatório consolida os resultados obtidos ao longo do exercício fiscal, apresentando uma análise detalhada dos indicadores de performance, metas alcançadas e oportunidades de melhoria identificadas para o próximo período.</p>
-            <p class="indent">Os dados evidenciam crescimento consistente em todas as unidades de negócio, com destaque para os segmentos de tecnologia e inovação, que superaram as projeções iniciais em aproximadamente 23%.</p>
-            <h2>2. Indicadores Principais</h2>
-            <p class="indent">A avaliação de desempenho foi conduzida com base em métricas previamente acordadas entre as equipes de liderança e os respectivos departamentos. Os critérios incluem produtividade, qualidade das entregas, satisfação do cliente e aderência aos processos internos.</p>
-            <p class="indent">Destaca-se o empenho das equipes multidisciplinares no desenvolvimento de soluções inovadoras que contribuíram para a redução de custos operacionais e o aumento da satisfação dos clientes finais.</p>
-            <h2>3. Conclusão</h2>
-            <p class="indent">Com base nos resultados apresentados, conclui-se que a organização encontra-se em trajetória positiva, com fundamentos sólidos para sustentar o crescimento nos próximos períodos. Recomenda-se continuidade dos investimentos em capacitação e tecnologia.</p>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="word-stbar">
-      <span>Página 1 de 1</span>
-      <span>271 palavras</span>
-      <span>Português (Brasil)</span>
-      <span><i class="ti ti-check" style="font-size:11px"></i> Ortografia OK</span>
-      <div class="right-cluster">
-        <div class="view-btns">
-          <div class="vbtn on" title="Layout de Impressão"><i class="ti ti-file" style="font-size:12px"></i></div>
-          <div class="vbtn" title="Modo Leitura"><i class="ti ti-book" style="font-size:12px"></i></div>
-          <div class="vbtn" title="Layout Web"><i class="ti ti-world" style="font-size:12px"></i></div>
+      <!-- WORD VIEW -->
+      <div class="view on" id="vw">
+        <div class="tbar2 w">
+          <div class="tb-logo"><div class="wico w">W</div></div>
+          <div class="qat">
+            <div class="qbt" title="Salvar">&#128190;</div>
+            <div class="qbt" title="Desfazer">&#8617;</div>
+            <div class="qbt" title="Refazer">&#8618;</div>
+          </div>
+          <div class="tdoc">Documento1 — Word</div>
+          <div class="tuser"><span style="font-size:10px">Compartilhar</span><div class="tavt">RF</div></div>
+          <div class="wcb">&#8212;</div><div class="wcb">&#9633;</div><div class="wcb cl">&#10005;</div>
         </div>
-        <div class="zoom-bar">
-          <i class="ti ti-minus" style="font-size:11px;cursor:pointer"></i>
-          <input type="range" min="50" max="200" value="100" oninput="this.nextElementSibling.textContent=this.value+'%'">
-          <span>100%</span>
+        <div class="rtabs w">
+          <div class="rtab on">Página Inicial</div>
+          <div class="rtab">Inserir</div>
+          <div class="rtab">Design</div>
+          <div class="rtab">Layout</div>
+          <div class="rtab">Referências</div>
+          <div class="rtab">Revisão</div>
+        </div>
+        <div class="ribbon">
+          <div class="rg">
+            <div class="rgt">
+              <div class="rb"><span style="font-size:22px">&#128203;</span><span>Colar</span></div>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <div class="rb sm"><span>&#9986;</span><span>Recortar</span></div>
+                <div class="rb sm"><span>&#128203;</span><span>Copiar</span></div>
+                <div class="rb sm"><span>&#128396;</span><span>Pincel</span></div>
+              </div>
+            </div>
+            <div class="rgl">Transferência</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="flex-direction:column;gap:2px">
+              <div class="fsrow">
+                <select class="fsel" style="width:130px"><option>Calibri (Corpo)</option><option>Arial</option><option>Times New Roman</option></select>
+                <select class="fsel" style="width:38px"><option>11</option><option>12</option><option>14</option><option>16</option></select>
+              </div>
+              <div class="fmrow">
+                <div class="fb on" id="wN" style="font-weight:700;font-size:13px">N</div>
+                <div class="fb" id="wI" style="font-style:italic;font-size:13px">I</div>
+                <div class="fb" id="wS" style="text-decoration:underline;font-size:13px">S</div>
+                <div class="fb" style="font-size:11px;text-decoration:line-through">abc</div>
+                <div class="rsep"></div>
+                <div class="clb"><div style="font-size:12px;font-weight:700;color:#e74c3c">A</div><div class="cbar" style="width:14px;background:#e74c3c"></div></div>
+                <div class="clb"><div style="font-size:12px">A</div><div class="cbar" style="width:14px;background:#f1c40f"></div></div>
+              </div>
+            </div>
+            <div class="rgl">Fonte</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="flex-direction:column;gap:2px">
+              <div class="fmrow">
+                <div class="fb" style="font-size:13px">&#8226;&#8801;</div>
+                <div class="fb" style="font-size:13px">1&#8801;</div>
+                <div class="rsep"></div>
+                <div class="fb" style="font-size:13px">&#8676;</div>
+                <div class="fb" style="font-size:13px">&#8677;</div>
+              </div>
+              <div class="fmrow">
+                <div class="fb" style="font-size:13px">&#8676;&#8676;</div>
+                <div class="fb on" style="font-size:13px">&#9644;</div>
+                <div class="fb" style="font-size:13px">&#8677;&#8677;</div>
+                <div class="fb" style="font-size:13px">&#8803;</div>
+              </div>
+            </div>
+            <div class="rgl">Parágrafo</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="gap:3px">
+              <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid #2B579A;border-radius:2px;padding:3px 6px;background:#ddeeff"><div style="font-size:14px;font-weight:700;color:#1F3864">T</div><div style="font-size:9px;color:#2B579A">Título 1</div></div>
+              <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid transparent;border-radius:2px;padding:3px 6px" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background=''"><div style="font-size:13px;font-weight:600;color:#1F3864">T</div><div style="font-size:9px;color:#888">Título 2</div></div>
+              <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;border:1px solid transparent;border-radius:2px;padding:3px 6px" onmouseover="this.style.background='#e5e5e5'" onmouseout="this.style.background=''"><div style="font-size:12px;font-style:italic;color:#555">T</div><div style="font-size:9px;color:#888">Normal</div></div>
+            </div>
+            <div class="rgl">Estilos</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="gap:2px">
+              <div class="rb"><span style="font-size:18px">&#128269;</span><span>Localizar</span></div>
+              <div class="rb"><span style="font-size:18px">&#8644;</span><span>Substituir</span></div>
+              <div class="rb" onclick="document.getElementById('wordPage').innerHTML='<h1>Documento</h1><p></p>'"><span style="font-size:18px">&#128465;</span><span>Limpar</span></div>
+            </div>
+            <div class="rgl">Edição</div>
+          </div>
+        </div>
+        <div class="wbody">
+          <div class="vrul">
+            <div class="vrn">1</div><div class="vrn">2</div><div class="vrn">3</div>
+            <div class="vrn">4</div><div class="vrn">5</div><div class="vrn">6</div>
+          </div>
+          <div class="wscroll">
+            <div class="hrulw" id="hrul"></div>
+            <div class="page" id="wordPage" contenteditable="true">
+              <h1>Relatório Anual de Desempenho</h1>
+              <h2>1. Resumo Executivo</h2>
+              <p class="ind">O presente relatório consolida os resultados obtidos ao longo do exercício fiscal, apresentando uma análise detalhada dos indicadores de performance e metas alcançadas.</p>
+              <p class="ind">Os dados evidenciam crescimento consistente em todas as unidades de negócio, com destaque para os segmentos de tecnologia e inovação, que superaram as projeções iniciais em 23%.</p>
+              <h2>2. Indicadores Principais</h2>
+              <p class="ind">A avaliação foi conduzida com base em métricas previamente acordadas entre as equipes de liderança e os respectivos departamentos, incluindo produtividade e satisfação do cliente.</p>
+            </div>
+          </div>
+        </div>
+        <div class="wstbar">
+          <span>Página 1 de 1</span><span>271 palavras</span><span>Português (Brasil)</span>
+          <span style="margin-left:auto">&#10003; Ortografia OK</span>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- ════════════════ EXCEL ════════════════ -->
-  <div class="shell" id="appExcel">
-    <div class="titlebar excel-bar">
-      <div class="tb-logo"><div class="wico x">X</div></div>
-      <div class="qat">
-        <div class="qat-btn"><i class="ti ti-device-floppy"></i></div>
-        <div class="qat-btn"><i class="ti ti-arrow-back-up"></i></div>
-        <div class="qat-btn"><i class="ti ti-arrow-forward-up"></i></div>
+      <!-- EXCEL VIEW -->
+      <div class="view" id="ve">
+        <div class="tbar2 x">
+          <div class="tb-logo"><div class="wico x">X</div></div>
+          <div class="qat">
+            <div class="qbt">&#128190;</div>
+            <div class="qbt">&#8617;</div>
+            <div class="qbt">&#8618;</div>
+          </div>
+          <div class="tdoc">Pasta1 — Excel</div>
+          <div class="tuser"><span style="font-size:10px">Compartilhar</span><div class="tavt">RF</div></div>
+          <div class="wcb">&#8212;</div><div class="wcb">&#9633;</div><div class="wcb cl">&#10005;</div>
+        </div>
+        <div class="rtabs x">
+          <div class="rtab on">Página Inicial</div>
+          <div class="rtab">Inserir</div>
+          <div class="rtab">Layout de Página</div>
+          <div class="rtab">Fórmulas</div>
+          <div class="rtab">Dados</div>
+          <div class="rtab">Revisão</div>
+        </div>
+        <div class="ribbon">
+          <div class="rg">
+            <div class="rgt">
+              <div class="rb"><span style="font-size:22px">&#128203;</span><span>Colar</span></div>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <div class="rb sm"><span>&#9986;</span><span>Recortar</span></div>
+                <div class="rb sm"><span>&#128203;</span><span>Copiar</span></div>
+                <div class="rb sm"><span>&#128396;</span><span>Pincel</span></div>
+              </div>
+            </div>
+            <div class="rgl">Transferência</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="flex-direction:column;gap:2px">
+              <div class="fsrow">
+                <select class="fsel" style="width:100px"><option>Calibri</option><option>Arial</option></select>
+                <select class="fsel" style="width:36px"><option>11</option><option>12</option></select>
+              </div>
+              <div class="fmrow">
+                <div class="fb" style="font-weight:700;font-size:13px">N</div>
+                <div class="fb" style="font-style:italic;font-size:13px">I</div>
+                <div class="fb" style="text-decoration:underline;font-size:13px">S</div>
+                <div class="rsep"></div>
+                <div class="fb" style="font-size:13px">&#9645;</div>
+                <div class="clb"><div style="font-size:12px;color:#217346;font-weight:700">A</div><div class="cbar" style="width:14px;background:#217346"></div></div>
+              </div>
+            </div>
+            <div class="rgl">Fonte</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="flex-direction:column;gap:2px">
+              <div class="fmrow">
+                <div class="fb" style="font-size:13px">&#8676;</div>
+                <div class="fb" style="font-size:13px">&#9644;</div>
+                <div class="fb" style="font-size:13px">&#8677;</div>
+                <div class="rsep"></div>
+                <div class="fb" style="font-size:11px">&#8617;Z</div>
+              </div>
+              <div class="fmrow">
+                <div class="fb on" style="font-size:13px">&#9723;</div>
+                <div class="rsep"></div>
+                <div class="fb" style="font-size:10px;padding:0 4px">Mesclar &#9660;</div>
+              </div>
+            </div>
+            <div class="rgl">Alinhamento</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="flex-direction:column;gap:2px">
+              <div class="fmrow"><div class="fb" style="font-size:10px;padding:0 4px">Geral &#9660;</div></div>
+              <div class="fmrow">
+                <div class="fb" style="color:#217346;font-size:13px">$</div>
+                <div class="fb" style="font-size:13px">%</div>
+                <div class="fb" style="font-size:10px">000</div>
+                <div class="rsep"></div>
+                <div class="fb" style="font-size:11px">.0+</div>
+                <div class="fb" style="font-size:11px">.0-</div>
+              </div>
+            </div>
+            <div class="rgl">Número</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="gap:2px">
+              <div class="rb"><span style="font-size:18px">&#127809;</span><span>Format.<br>Condic.</span></div>
+              <div class="rb"><span style="font-size:18px">&#9783;</span><span>Format.<br>Tabela</span></div>
+              <div class="rb" onclick="clearExcel()"><span style="font-size:18px">&#128465;</span><span>Limpar</span></div>
+            </div>
+            <div class="rgl">Estilos</div>
+          </div>
+          <div class="rg">
+            <div class="rgt" style="gap:2px">
+              <div class="rb"><span style="font-size:18px">&#931;</span><span>AutoSoma</span></div>
+              <div class="rb"><span style="font-size:18px">&#8645;</span><span>Classificar</span></div>
+              <div class="rb"><span style="font-size:18px">&#128269;</span><span>Localizar</span></div>
+            </div>
+            <div class="rgl">Edição</div>
+          </div>
+        </div>
+        <div class="fbar">
+          <div class="fnb" id="nb">A1</div>
+          <div class="ffx">fx</div>
+          <input class="fxi" id="fxi" type="text" readonly>
+        </div>
+        <div class="xwrap"><table class="xt" id="xt"></table></div>
+        <div class="stabs">
+          <div class="stab on">Plan1</div>
+          <div class="stab">Plan2</div>
+          <div class="stab">Resumo</div>
+          <div style="width:22px;height:18px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#888;margin-left:4px">+</div>
+        </div>
+        <div class="xlstbar"><span>Pronto</span><span style="margin-left:auto" id="xlStats">Soma: —</span></div>
       </div>
-      <div class="tb-docname">Pasta1 — Excel</div>
-      <div class="tb-user">
-        <span>Compartilhar</span>
-        <div class="tb-avatar">RF</div>
-      </div>
-      <div class="wc-btn">&#8212;</div>
-      <div class="wc-btn">&#9633;</div>
-      <div class="wc-btn close">&#10005;</div>
-    </div>
 
-    <div class="ribbon-tabs excel-rt">
-      <div class="rtab on">Página Inicial</div>
-      <div class="rtab">Inserir</div>
-      <div class="rtab">Layout de Página</div>
-      <div class="rtab">Fórmulas</div>
-      <div class="rtab">Dados</div>
-      <div class="rtab">Revisão</div>
-      <div class="rtab">Exibir</div>
-    </div>
+      <!-- EXTRAS VIEW -->
+      <div class="view" id="vx">
+        <div style="padding:6px 10px;background:#f5f5f5;border-bottom:1px solid #ddd;font-size:11px;color:#888">Extras — simulações adicionais</div>
+        <div class="ext-area">
+          <div class="ec" style="min-width:220px;flex:1">
+            <h4>&#127912; Paint</h4>
+            <canvas id="cv" width="220" height="120" style="border:1px solid #ddd;border-radius:3px;width:100%;height:120px"></canvas>
+          </div>
+          <div class="ec" style="min-width:200px;flex:1">
+            <h4>&#9000; Terminal</h4>
+            <div class="term" id="term"></div>
+          </div>
+          <div class="ec" style="min-width:190px;flex:1">
+            <h4>&#128196; Formulário</h4>
+            <div class="fg">
+              <label>Nome</label><input type="text" id="fn" placeholder="Digite aqui...">
+              <label>Email</label><input type="text" id="fe" placeholder="email@exemplo.com">
+              <label>Cargo</label><select id="fc"><option>Selecione...</option><option>Dev</option><option>Designer</option><option>Gerente</option></select>
+              <label>Mensagem</label><input type="text" id="fm" placeholder="Sua mensagem...">
+            </div>
+          </div>
+          <div class="ec" style="min-width:160px;max-width:190px">
+            <h4>&#128290; Calculadora</h4>
+            <div class="cd" id="cd">0</div>
+            <div class="cg" id="cg"></div>
+          </div>
+          <div class="ec" style="min-width:190px;flex:1">
+            <h4>&#128172; Chat</h4>
+            <div class="chat-msgs" id="chat"></div>
+          </div>
+        </div>
+      </div>
 
-    <div class="ribbon">
-      <!-- Transferência -->
-      <div class="rgroup">
-        <div class="rg-top">
-          <div class="rb"><i class="ti ti-clipboard-text"></i><span>Colar</span></div>
-          <div style="display:flex;flex-direction:column;gap:2px">
-            <div class="rb sm"><i class="ti ti-cut"></i><span>Recortar</span></div>
-            <div class="rb sm"><i class="ti ti-copy"></i><span>Copiar</span></div>
-            <div class="rb sm"><i class="ti ti-paint"></i><span>Pincel</span></div>
-          </div>
-        </div>
-        <div class="rg-label">Área de Transferência</div>
-      </div>
-      <!-- Fonte -->
-      <div class="rgroup">
-        <div class="rg-top" style="flex-direction:column;gap:3px">
-          <div class="font-row">
-            <select class="font-sel" style="width:110px"><option>Calibri</option><option>Arial</option></select>
-            <select class="size-sel"><option>11</option><option>12</option></select>
-            <div class="fmt-btn"><i class="ti ti-letter-case-upper" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-letter-case-lower" style="font-size:14px"></i></div>
-          </div>
-          <div class="fmt-row">
-            <div class="fmt-btn" style="font-weight:700;font-size:14px">N</div>
-            <div class="fmt-btn" style="font-style:italic;font-size:14px">I</div>
-            <div class="fmt-btn" style="text-decoration:underline;font-size:14px">S</div>
-            <div class="rb-sep"></div>
-            <div class="fmt-btn"><i class="ti ti-border-outer" style="font-size:14px"></i></div>
-            <div class="clr-btn"><div style="font-size:13px;color:#217346;font-weight:700">A</div><div class="color-bar" style="width:16px;background:#217346"></div></div>
-            <div class="clr-btn"><div style="font-size:13px">A</div><div class="color-bar" style="width:16px;background:#f1c40f"></div></div>
-          </div>
-        </div>
-        <div class="rg-label">Fonte</div>
-      </div>
-      <!-- Alinhamento -->
-      <div class="rgroup">
-        <div class="rg-top" style="flex-direction:column;gap:3px">
-          <div class="fmt-row">
-            <div class="fmt-btn"><i class="ti ti-align-left" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-align-center" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-align-right" style="font-size:14px"></i></div>
-            <div class="rb-sep"></div>
-            <div class="fmt-btn"><i class="ti ti-text-wrap" style="font-size:14px"></i></div>
-          </div>
-          <div class="fmt-row">
-            <div class="fmt-btn on"><i class="ti ti-align-box-center-middle" style="font-size:14px"></i></div>
-            <div class="fmt-btn"><i class="ti ti-align-box-bottom-left" style="font-size:14px"></i></div>
-            <div class="rb-sep"></div>
-            <div class="fmt-btn" style="font-size:11px;padding:0 5px">Mesclar ▾</div>
-          </div>
-        </div>
-        <div class="rg-label">Alinhamento</div>
-      </div>
-      <!-- Número -->
-      <div class="rgroup">
-        <div class="rg-top" style="flex-direction:column;gap:3px">
-          <div class="fmt-row">
-            <div class="fmt-btn" style="font-size:11px;padding:2px 5px">Geral ▾</div>
-          </div>
-          <div class="fmt-row">
-            <div class="fmt-btn" style="color:#217346;font-size:14px">$</div>
-            <div class="fmt-btn" style="font-size:14px">%</div>
-            <div class="fmt-btn" style="font-size:11px">000</div>
-            <div class="rb-sep"></div>
-            <div class="fmt-btn" style="font-size:12px">.0+</div>
-            <div class="fmt-btn" style="font-size:12px">.0-</div>
-          </div>
-        </div>
-        <div class="rg-label">Número</div>
-      </div>
-      <!-- Estilos -->
-      <div class="rgroup">
-        <div class="rg-top" style="gap:3px">
-          <div class="rb"><i class="ti ti-paint"></i><span>Formatar<br>Condic.</span></div>
-          <div class="rb"><i class="ti ti-table"></i><span>Formatar<br>Tabela</span></div>
-          <div class="rb"><i class="ti ti-palette"></i><span>Estilos<br>Célula</span></div>
-        </div>
-        <div class="rg-label">Estilos</div>
-      </div>
-      <!-- Células -->
-      <div class="rgroup">
-        <div class="rg-top" style="gap:3px">
-          <div class="rb"><i class="ti ti-row-insert-bottom"></i><span>Inserir</span></div>
-          <div class="rb"><i class="ti ti-row-remove"></i><span>Excluir</span></div>
-          <div class="rb"><i class="ti ti-settings-2"></i><span>Formatar</span></div>
-        </div>
-        <div class="rg-label">Células</div>
-      </div>
-      <!-- Edição -->
-      <div class="rgroup">
-        <div class="rg-top" style="gap:3px">
-          <div class="rb"><i class="ti ti-sum"></i><span>AutoSoma</span></div>
-          <div class="rb"><i class="ti ti-arrows-sort"></i><span>Classificar</span></div>
-          <div class="rb"><i class="ti ti-search"></i><span>Localizar</span></div>
-        </div>
-        <div class="rg-label">Edição</div>
-      </div>
-    </div>
-
-    <div class="excel-content">
-      <div class="namebox-bar">
-        <div class="namebox" id="nb">B3</div>
-        <div class="fx-label">fx</div>
-        <input class="fxbar-input" id="fxi" type="text" value="=SOMA(B2:B12)" readonly>
-      </div>
-      <div class="xl-body">
-        <div class="xl-scroll">
-          <table class="xl-tbl" id="xtbl"></table>
-        </div>
-      </div>
-    </div>
-
-    <div class="sheettabs">
-      <div class="stab on">Plan1</div>
-      <div class="stab">Plan2</div>
-      <div class="stab">Resumo</div>
-      <div class="stab-add">+</div>
-    </div>
-
-    <div class="xl-stbar">
-      <span>Pronto</span>
-      <span><i class="ti ti-accessibility" style="font-size:11px"></i> Acessibilidade: OK</span>
-      <div class="right-cluster">
-        <span>Média: 48.250</span>
-        <span>Contagem: 8</span>
-        <span>Soma: 386.000</span>
-        <div class="view-btns">
-          <div class="vbtn on"><i class="ti ti-layout-grid" style="font-size:12px"></i></div>
-          <div class="vbtn"><i class="ti ti-layout-list" style="font-size:12px"></i></div>
-          <div class="vbtn"><i class="ti ti-book" style="font-size:12px"></i></div>
-        </div>
-        <div class="zoom-bar">
-          <i class="ti ti-minus" style="font-size:11px;cursor:pointer"></i>
-          <input type="range" min="50" max="200" value="100" oninput="this.nextElementSibling.textContent=this.value+'%'">
-          <span>100%</span>
-        </div>
+      <div style="height:18px;background:#333;display:flex;align-items:center;padding:0 8px;flex-shrink:0">
+        <span id="stmsg" style="font-size:10px;color:#aaa">Pronto — marque ações no painel para o bot começar</span>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  function show(app) {
-    document.getElementById('appWord').className = 'shell' + (app === 'word' ? ' on' : '');
-    document.getElementById('appExcel').className = 'shell' + (app === 'excel' ? ' on' : '');
-    document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('on'));
-    document.querySelector('.sw-btn.' + app).classList.add('on');
+  // ── TOGGLE ──
+  let simOpen = false;
+  function toggleSim() {
+    simOpen = !simOpen;
+    document.getElementById('simWrap').className = 'sim-wrap' + (simOpen ? ' open' : '');
+    document.getElementById('togTxt').textContent = simOpen ? '▲ retrair simulador' : '▼ expandir simulador';
   }
 
-  // Horizontal ruler
-  const ruler = document.getElementById('hruler');
-  if (ruler) {
-    for (let i = 0; i <= 22; i++) {
-      const tick = document.createElement('div');
-      const isCm = i % 2 === 0;
-      tick.style.cssText = `position:absolute;left:${i*24}px;top:${isCm?'3px':'6px'};width:1px;height:${isCm?'9px':'5px'};background:${isCm?'#999':'#ccc'}`;
-      ruler.appendChild(tick);
-      if (isCm && i > 0) {
-        const n = document.createElement('span');
-        n.textContent = i / 2;
-        n.style.cssText = `position:absolute;left:${i*24+2}px;top:1px;font-size:9px;color:#888`;
-        ruler.appendChild(n);
-      }
+  // ── TABS ──
+  function goTab(t) {
+    ['w','e','x'].forEach(id => {
+      document.getElementById('v'+id).className = 'view' + (id===t?' on':'');
+      document.getElementById('t'+id).className = 'app-tab' + (id===t?' on':'');
+    });
+    document.getElementById('appTabs').style.background = t==='e' ? '#217346' : '#2B579A';
+  }
+
+  // ── RULER ──
+  const hr = document.getElementById('hrul');
+  for (let i = 0; i <= 18; i++) {
+    const t = document.createElement('div');
+    const c = i % 2 === 0;
+    t.style.cssText = `position:absolute;left:${i*22}px;top:${c?'3px':'6px'};width:1px;height:${c?'8px':'4px'};background:${c?'#999':'#ccc'}`;
+    hr.appendChild(t);
+    if (c && i > 0) {
+      const n = document.createElement('span');
+      n.textContent = i/2;
+      n.style.cssText = `position:absolute;left:${i*22+2}px;top:1px;font-size:8px;color:#888`;
+      hr.appendChild(n);
     }
   }
 
-  // Excel table
-  const COLS = 12, ROWS = 22, CL = 'ABCDEFGHIJKL';
-  const data = {
-    0: {1:'Produto', 2:'Jan', 3:'Fev', 4:'Mar', 5:'Abr', 6:'Mai', 7:'Jun', 8:'Total', 9:'Meta', 10:'Var%'},
-    1: {1:'Alpha',   2:'42.000', 3:'38.500', 4:'51.200', 5:'47.300', 6:'55.800', 7:'61.000', 8:'295.800', 9:'50.000', 10:'▲ 12%'},
-    2: {1:'Beta',    2:'31.000', 3:'29.800', 4:'33.400', 5:'35.600', 6:'37.200', 7:'39.500', 8:'206.500', 9:'35.000', 10:'▲ 6%'},
-    3: {1:'Gamma',   2:'18.500', 3:'21.000', 4:'19.800', 5:'22.400', 6:'24.100', 7:'26.500', 8:'132.300', 9:'20.000', 10:'▲ 32%'},
-    4: {1:'Delta',   2:'55.000', 3:'52.300', 4:'58.900', 5:'61.200', 6:'59.800', 7:'63.400', 8:'350.600', 9:'60.000', 10:'▲ 1%'},
-    5: {1:'Epsilon', 2:'9.800',  3:'11.200', 4:'10.500', 5:'12.800', 6:'13.400', 7:'14.200', 8:'71.900',  9:'12.000', 10:'▲ 18%'},
-    6: {1:'Zeta',    2:'77.000', 3:'81.200', 4:'74.800', 5:'79.600', 6:'83.000', 7:'85.500', 8:'481.100', 9:'80.000', 10:'▲ 4%'},
-    7: {1:'Eta',     2:'22.400', 3:'24.800', 4:'21.600', 5:'23.900', 6:'25.100', 7:'27.300', 8:'145.100', 9:'25.000', 10:'▲ 9%'},
-    8: {1:'TOTAL',   2:'255.700',3:'258.800',4:'270.200',5:'282.800',6:'298.400',7:'317.400',8:'1.683.300'},
+  // ── BOT ──
+  const lorems = ['Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.','Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.','Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.','Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est.','Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas volutpat.'];
+  const titles = ['Introdução','Metodologia e Análise','Resultados e Discussão','Conclusão','Referências Bibliográficas'];
+  const listSets = [['Planejamento estratégico','Execução do projeto','Monitoramento de KPIs','Revisão e ajustes'],['Design thinking','Prototipação rápida','Testes A/B','Deploy contínuo']];
+  const cmds = ['ls -la','git status','git pull origin main','npm run build','docker ps -a'];
+  const cmdOuts = {'ls -la':'total 48\ndrwxr-xr-x  8 user  256\n-rw-r--r--  1 user 1420 package.json\n-rw-r--r--  1 user  312 README.md','git status':'On branch main\nYour branch is up to date.\nnothing to commit, working tree clean','npm run build':'> project@1.0.0 build\nCompiling... ✓\nBundle: 142kb\nDone in 2.3s','docker ps -a':'CONTAINER   IMAGE        STATUS\na1b2c3d4   nginx:latest  Up 2h\n7g8h9i0j   node:18       Exited'};
+  const chatPairs = [['Oi, tudo bem?','Tudo ótimo! E você?'],['Pode me ajudar?','Claro, como posso ajudar?'],['Reunião às 15h?','Confirmado!'],['Obrigado pelo suporte!','Disponha, qualquer coisa é só chamar!']];
+  const calcSeqs = [['7','×','8','='],['1','2','3','+','4','5','='],['9','9','÷','9','='],['5','.','5','×','2','=']];
+  const calcBtnList = ['7','8','9','÷','4','5','6','×','1','2','3','−','0','.','=','+'];
+
+  let running = false, bots = {}, loopIdx = 0, chatPairIdx = 0;
+
+  function spd() { return [150,80,40,20,8][+document.getElementById('sp').value-1]; }
+  function setSt(m) { document.getElementById('stmsg').textContent = m; }
+  function hlRow(id, on) { const r = document.getElementById('r'+id.replace('c','')); if(r) r.className = 'ck-row'+(on?' act':''); }
+  function getChecked() { return [...Array(15).keys()].map(i=>'c'+i).filter(id=>document.getElementById(id)?.checked); }
+  function wait(ms) { return new Promise(r => { if(running) bots['w'+Math.random()] = setTimeout(r, ms); else r(); }); }
+  function removeCur() { document.querySelectorAll('.cur').forEach(e => e.remove()); }
+  function clearXhl() { document.querySelectorAll('#xt td').forEach(td => td.classList.remove('sel','hl','hl2')); }
+
+  for (let i = 0; i < 15; i++) {
+    const el = document.getElementById('c'+i);
+    if (el) el.onchange = function() {
+      if (getChecked().length > 0 && !running) startBot();
+      else if (!getChecked().length) stopBot();
+    };
+  }
+
+  function startBot() { running = true; runLoop(); }
+  function stopBot() {
+    running = false;
+    Object.values(bots).forEach(t => clearTimeout(t));
+    bots = {};
+    document.querySelectorAll('.ck-row').forEach(r => r.className = 'ck-row');
+    removeCur(); clearXhl(); setSt('Parado');
+  }
+
+  async function runLoop() {
+    if (!running) return;
+    const checked = getChecked();
+    if (!checked.length) { running = false; setSt('Nenhuma ação marcada'); return; }
+    const id = checked[loopIdx % checked.length]; loopIdx++;
+    hlRow(id, true); await runAction(id); hlRow(id, false);
+    if (running) bots.loop = setTimeout(runLoop, 150);
+  }
+
+  async function typeInto(el, text) {
+    removeCur();
+    const cur = document.createElement('span'); cur.className = 'cur'; el.appendChild(cur);
+    for (let ch of text) {
+      if (!running) break;
+      cur.insertAdjacentText('beforebegin', ch);
+      setSt('Digitando... ' + el.textContent.length + ' chars');
+      await wait(spd());
+    }
+    cur.remove();
+  }
+
+  async function runAction(id) {
+    const s = spd(); const page = document.getElementById('wordPage');
+    if (id==='c0') { goTab('w'); const p=document.createElement('p'); page.appendChild(p); await typeInto(p, lorems[Math.floor(Math.random()*lorems.length)]); page.scrollTop=page.scrollHeight; }
+    else if (id==='c1') { goTab('w'); const h=document.createElement('h2'); page.appendChild(h); await typeInto(h, titles[Math.floor(Math.random()*titles.length)]); page.scrollTop=page.scrollHeight; }
+    else if (id==='c2') { goTab('w'); const ul=document.createElement('ul'); page.appendChild(ul); const set=listSets[Math.floor(Math.random()*listSets.length)]; for(let it of set){if(!running)break;const li=document.createElement('li');ul.appendChild(li);await typeInto(li,it);await wait(s*2)} page.scrollTop=page.scrollHeight; }
+    else if (id==='c3') { goTab('w'); const tbl=document.createElement('table'); const hdr=['Item','Jan','Fev','Mar']; const hr2=tbl.insertRow(); hdr.forEach(h=>{const th=document.createElement('th');th.textContent=h;hr2.appendChild(th)}); for(let r=0;r<3;r++){const tr=tbl.insertRow();for(let c=0;c<4;c++){const td=tr.insertCell();td.textContent=c===0?['Produto A','Produto B','Produto C'][r]:Math.floor(Math.random()*9000+1000);await wait(s*3)}} page.appendChild(tbl); page.appendChild(document.createElement('p')); page.scrollTop=page.scrollHeight; }
+    else if (id==='c4') { goTab('w'); const btns=['wN','wI','wS']; const b=btns[Math.floor(Math.random()*btns.length)]; const el=document.getElementById(b); el.classList.add('on'); await wait(700); el.classList.remove('on'); }
+    else if (id==='c5') { goTab('e'); const hds=['Produto','Jan','Fev','Mar','Abr','Mai','Jun','Total']; const prods=['Alpha','Beta','Gamma','Delta','Epsilon']; for(let c=0;c<8;c++){if(!running)break;xsel(0,c);xset(0,c,hds[c]);await wait(s*4)} for(let r=1;r<=5;r++){if(!running)break;xsel(r,0);xset(r,0,prods[r-1]);for(let c=1;c<=6;c++){if(!running)break;xsel(r,c);xset(r,c,Math.floor(Math.random()*90000+10000));setSt('Preenchendo '+prods[r-1]+'...');await wait(s*4)}} }
+    else if (id==='c6') { goTab('e'); for(let r=1;r<=5;r++){if(!running)break;xsel(r,7);const vals=[];for(let c=1;c<=6;c++){const v=parseInt(xget(r,c));if(!isNaN(v))vals.push(v)}const sum=vals.reduce((a,b)=>a+b,0);document.getElementById('fxi').value=`=SOMA(B${r+1}:G${r+1})`;xset(r,7,sum||0);setSt('Calculando soma...');await wait(s*7)} }
+    else if (id==='c7') { goTab('e'); for(let r=0;r<6;r++){for(let c=0;c<8;c++){if(!running)break;xsel(r,c);document.getElementById('fxi').value=xget(r,c)||'';setSt('Navegando células...');await wait(s*3)}} }
+    else if (id==='c8') { goTab('e'); clearXhl(); for(let r=1;r<=5;r++){for(let c=1;c<=6;c++){if(!running)break;const v=parseInt(xget(r,c));const td=xtd(r,c);if(td){if(!isNaN(v)&&v>60000)td.classList.add('hl');else if(!isNaN(v))td.classList.add('hl2')}setSt('Destacando valores...');await wait(s*4)}} }
+    else if (id==='c9') { goTab('e'); for(let r=1;r<=5;r++){if(!running)break;xsel(r,1);setSt('Ordenando dados...');await wait(s*10)} }
+    else if (id==='c10') { goTab('x'); const cv=document.getElementById('cv'); const ctx=cv.getContext('2d'); const colors=['#185FA5','#217346','#D85A30','#533AB7','#D4537E']; ctx.strokeStyle=colors[Math.floor(Math.random()*colors.length)]; ctx.lineWidth=2; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(Math.random()*200+10,Math.random()*100+10); for(let i=0;i<15;i++){if(!running)break;ctx.lineTo(Math.random()*200+10,Math.random()*100+10);ctx.stroke();setSt('Desenhando...');await wait(s*4)} }
+    else if (id==='c11') { goTab('x'); const term=document.getElementById('term'); const cmd=cmds[Math.floor(Math.random()*cmds.length)]; const out=cmdOuts[cmd]||'OK'; const line=document.createElement('div'); line.innerHTML=`<span class="pr">user@pc:~$</span> ${cmd}`; term.appendChild(line); await wait(400); const outEl=document.createElement('div'); outEl.style.cssText='color:#9cdcfe;white-space:pre;font-size:10px'; outEl.textContent=out; term.appendChild(outEl); term.scrollTop=term.scrollHeight; setSt('Terminal: '+cmd); if(term.children.length>16)term.removeChild(term.firstChild); }
+    else if (id==='c12') { goTab('x'); const fs=[{id:'fn',vals:['Ana Lima','Carlos Silva','Mariana Costa']},{id:'fe',vals:['ana@email.com','carlos@dev.io','mari@corp.com']},{id:'fm',vals:['Gostaria de mais informações.','Preciso de suporte técnico.']}]; for(let f of fs){if(!running)break;const el=document.getElementById(f.id);if(!el)continue;const val=f.vals[Math.floor(Math.random()*f.vals.length)];el.value='';el.classList.add('ty');for(let ch of val){if(!running)break;el.value+=ch;setSt('Preenchendo formulário...');await wait(s*2)}el.classList.remove('ty');await wait(300)} const sel=document.getElementById('fc');if(sel)sel.selectedIndex=Math.floor(Math.random()*3)+1; }
+    else if (id==='c13') { goTab('x'); const seq=calcSeqs[Math.floor(Math.random()*calcSeqs.length)]; let disp='',prev=0,op=''; for(let k of seq){if(!running)break;const el=document.getElementById('cb'+k);if(el){el.classList.add('act');await wait(s*8);el.classList.remove('act')}if(!isNaN(k)||k==='.'){disp+=k;document.getElementById('cd').textContent=disp}else if(k==='='){const n=parseFloat(disp);let res=op==='÷'?prev/n:op==='×'?prev*n:op==='−'?prev-n:prev+n;document.getElementById('cd').textContent=isFinite(res)?+res.toFixed(4):res;disp='';op=''}else{prev=parseFloat(disp)||0;op=k;disp='';document.getElementById('cd').textContent=prev}setSt('Calculadora: '+k);await wait(s*6)} }
+    else if (id==='c14') { goTab('x'); const chat=document.getElementById('chat'); const pair=chatPairs[chatPairIdx%chatPairs.length]; chatPairIdx++; for(let i=0;i<2;i++){if(!running)break;const dots=document.createElement('div');dots.className='msg oth';dots.innerHTML='<span class="dot"></span><span class="dot"></span><span class="dot"></span>';chat.appendChild(dots);chat.scrollTop=chat.scrollHeight;await wait(600);dots.remove();const msg=document.createElement('div');msg.className='msg '+(i===0?'oth':'me');chat.appendChild(msg);for(let ch of pair[i]){if(!running)break;msg.textContent+=ch;await wait(s*2)}chat.scrollTop=chat.scrollHeight;await wait(300)} if(chat.children.length>10)while(chat.children.length>7)chat.removeChild(chat.firstChild); }
+  }
+
+  // ── EXCEL ──
+  const COLS=10, ROWS=20, CL='ABCDEFGHIJ';
+  const xdata = {
+    0:{1:'Produto',2:'Jan',3:'Fev',4:'Mar',5:'Abr',6:'Mai',7:'Jun',8:'Total'},
+    1:{1:'Alpha',2:'42000',3:'38500',4:'51200',5:'47300',6:'55800',7:'61000'},
+    2:{1:'Beta',2:'31000',3:'29800',4:'33400',5:'35600',6:'37200',7:'39500'},
+    3:{1:'Gamma',2:'18500',3:'21000',4:'19800',5:'22400',6:'24100',7:'26500'},
+    4:{1:'Delta',2:'55000',3:'52300',4:'58900',5:'61200',6:'59800',7:'63400'},
+    5:{1:'Epsilon',2:'9800',3:'11200',4:'10500',5:'12800',6:'13400',7:'14200'}
   };
 
   function buildExcel() {
-    const t = document.getElementById('xtbl');
-    t.innerHTML = '';
-    const hr = t.insertRow();
-    const corner = document.createElement('th'); corner.style.minWidth = '36px'; hr.appendChild(corner);
-    for (let c = 0; c < COLS; c++) {
-      const th = document.createElement('th');
-      th.textContent = CL[c];
-      th.style.minWidth = c === 0 ? '90px' : c <= 1 ? '80px' : '72px';
-      hr.appendChild(th);
-    }
+    const t = document.getElementById('xt'); t.innerHTML = '';
+    const hr2 = t.insertRow(); const c0 = document.createElement('th'); c0.style.minWidth='30px'; hr2.appendChild(c0);
+    for (let c = 0; c < COLS; c++) { const th=document.createElement('th'); th.textContent=CL[c]; th.style.minWidth=c===0?'80px':c===1?'75px':'68px'; hr2.appendChild(th); }
     for (let r = 0; r < ROWS; r++) {
-      const tr = t.insertRow();
-      if (r === 8) tr.className = 'total-row';
-      const rh = tr.insertCell(); rh.textContent = r + 1;
+      const tr = t.insertRow(); const rh = tr.insertCell(); rh.textContent = r+1;
       for (let c = 0; c < COLS; c++) {
-        const td = tr.insertCell();
-        const rowD = data[r];
-        if (rowD && rowD[c + 1] !== undefined) {
-          td.textContent = rowD[c + 1];
-          if (r === 0) { td.style.fontWeight = '600'; td.style.background = '#e9f2e9'; td.style.color = '#1a5e35'; }
-          if ((rowD[c + 1] + '').includes('▲')) { td.style.color = '#217346'; td.style.fontWeight = '500'; }
-        }
-        td.onclick = function () {
-          document.querySelectorAll('.xl-tbl td').forEach(x => x.classList.remove('sel'));
-          this.classList.add('sel');
-          document.getElementById('nb').textContent = CL[c] + (r + 1);
-          document.getElementById('fxi').value = rowD && rowD[c + 1] !== undefined ? rowD[c + 1] : '';
-        };
-        if (r === 2 && c === 1) setTimeout(() => td.classList.add('sel'), 100);
+        const td = tr.insertCell(); const rowD = xdata[r];
+        if (rowD && rowD[c+1] !== undefined) { td.textContent=rowD[c+1]; td.dataset.v=rowD[c+1]; if(r===0){td.style.fontWeight='600';td.style.background='#e9f2e9';td.style.color='#1a5e35'} }
+        else td.dataset.v = '';
+        td.onclick = function() { clearXhl(); td.classList.add('sel'); document.getElementById('nb').textContent=CL[c]+(r+1); document.getElementById('fxi').value=td.dataset.v||''; };
+        if (r===1 && c===1) setTimeout(() => td.classList.add('sel'), 100);
       }
     }
   }
+  function xtd(r,c) { const t=document.getElementById('xt'); const tr=t.rows[r+1]; return tr?tr.cells[c+1]:null; }
+  function xset(r,c,v) { const td=xtd(r,c); if(td){td.dataset.v=String(v);td.textContent=String(v)} }
+  function xget(r,c) { const td=xtd(r,c); return td?(td.dataset.v||''):''; }
+  function xsel(r,c) { clearXhl(); const td=xtd(r,c); if(td)td.classList.add('sel'); document.getElementById('nb').textContent=CL[c]+(r+1); }
+  function clearExcel() { buildExcel(); document.getElementById('fxi').value=''; document.getElementById('nb').textContent='A1'; }
+
+  // Calc buttons
+  const cg = document.getElementById('cg');
+  calcBtnList.forEach(b => {
+    const btn = document.createElement('div');
+    btn.className = 'cbtn' + ('÷×−+'.includes(b) ? ' op' : '');
+    btn.id = 'cb' + b; btn.textContent = b; cg.appendChild(btn);
+  });
+
   buildExcel();
 </script>
 </body>
